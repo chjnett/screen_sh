@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+pgvector
+python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
+beautifulsoup4
+selenium
+openai
+langchain
+yfinance
+pydantic-settings
