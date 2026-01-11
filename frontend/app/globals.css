@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Toss Securities style dark theme */
+  --background: #101113;
+  --foreground: #ffffff;
+  --card: #1a1b1e;
+  --card-foreground: #ffffff;
+  --popover: #1a1b1e;
+  --popover-foreground: #ffffff;
+  --primary: #3182f6;
+  --primary-foreground: #ffffff;
+  --secondary: #1a1b1e;
+  --secondary-foreground: #ffffff;
+  --muted: #2a2b2e;
+  --muted-foreground: #8b8b8b;
+  --accent: #2a2b2e;
+  --accent-foreground: #ffffff;
+  --destructive: #f04438;
+  --destructive-foreground: #f04438;
+  --border: #2a2b2e;
+  --input: #1a1b1e;
+  --ring: #3182f6;
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --font-sans: "Geist", "Geist Fallback";
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-toss-blue: #3182f6;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
