@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import engine, Base, get_db
 from app import models, schemas, rag
+from app.api import auth
 
 # Create tables
 from sqlalchemy import text
@@ -11,7 +12,21 @@ with engine.connect() as connection:
 
 Base.metadata.create_all(bind=engine)
 
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="LogMind AI API", version="0.1.0")
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins like ["http://localhost:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
 
 @app.get("/")
 def read_root():

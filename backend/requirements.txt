@@ -1,14 +1,30 @@
+
 fastapi
 uvicorn
 sqlalchemy
 psycopg2-binary
-pgvector
-python-multipart
+alembic
+pydantic
+pydantic-settings
 python-jose[cryptography]
 passlib[bcrypt]
-beautifulsoup4
-selenium
+bcrypt==4.0.1
+python-multipart
+# AI/ML dependencies
 openai
 langchain
-yfinance
-pydantic-settings
+langchain-openai
+langchain-community
+tiktoken
+chromadb
+rank_bm25
+sentence-transformers
+# Scheduling and Email
+apscheduler
+emails
+email-validator
+jinja2
+beautifulsoup4
+requests
+pytest
+pdfkit

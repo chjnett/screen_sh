@@ -43,8 +43,12 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - /app/.next # Prevent syncing build artifacts to host to avoid locks
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
+      # Fix for Windows file watching and filesystem issues
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
     depends_on:
       - backend
     networks:
