@@ -1,9 +1,25 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import RAGChat from "@/components/RAGChat";
 import { motion, Variants } from "framer-motion";
 
 export default function Home() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+    } else {
+      setIsAuthenticated(true);
+    }
+    setIsLoading(false);
+  }, [router]);
+
   const containerVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -20,6 +36,10 @@ export default function Home() {
   const itemVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+  }
+
+  if (isLoading || !isAuthenticated) {
+    return null;
   }
 
   return (
