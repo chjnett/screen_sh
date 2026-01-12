@@ -20,3 +20,4 @@ EXPOSE 3000
 
 # Start in development mode with hot reloading
 CMD ["npm", "run", "dev"]
+
