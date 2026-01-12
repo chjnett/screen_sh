@@ -26,7 +26,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.api import auth, portfolio
+
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(portfolio.router, prefix="/portfolio", tags=["portfolio"])
 
 @app.get("/")
 def read_root():

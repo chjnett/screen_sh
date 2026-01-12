@@ -21,12 +21,28 @@ class Portfolio(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, ForeignKey("users.id"))
-    symbol = Column(String, nullable=False)
-    quantity = Column(DECIMAL, nullable=False)
-    avg_price = Column(DECIMAL, nullable=False)
-    last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    name = Column(String, default="My Portfolio")
+    total_value = Column(DECIMAL, default=0)
+    cash_balance = Column(DECIMAL, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="portfolios")
+    items = relationship("PortfolioItem", back_populates="portfolio", cascade="all, delete-orphan")
+
+class PortfolioItem(Base):
+    __tablename__ = "portfolio_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    portfolio_id = Column(Integer, ForeignKey("portfolios.id"))
+    symbol = Column(String, nullable=False) # Ticker (e.g., AAPL)
+    name = Column(String) # Company Name
+    quantity = Column(DECIMAL, nullable=False)
+    avg_price = Column(DECIMAL, nullable=False)
+    current_price = Column(DECIMAL) # Cached price
+    sector = Column(String)
+    last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    portfolio = relationship("Portfolio", back_populates="items")
 
 class FinancialStatement(Base):
     __tablename__ = "financial_statements"

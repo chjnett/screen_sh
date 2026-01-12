@@ -34,15 +34,30 @@ export default function RAGChat() {
         }
     };
 
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                const result = reader.result as string;
+                // Remove prefix "data:image/jpeg;base64,"
+                const base64 = result.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = error => reject(error);
+        });
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!query.trim() && !selectedImage) return;
 
         const userMsg = query;
-        // If image is selected, add a special message or handling (placeholder logic)
+        const currentImage = selectedImage; // capture closure
+
         setMessages(prev => [...prev, {
             role: 'user',
-            content: userMsg + (selectedImage ? ` [이미지: ${selectedImage.name}]` : "")
+            content: userMsg + (currentImage ? ` [이미지 분석 요청: ${currentImage.name}]` : "")
         }]);
 
         setQuery("");
@@ -50,15 +65,57 @@ export default function RAGChat() {
         setLoading(true);
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/rag/query`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query: userMsg }),
-            });
-            const data = await res.json();
-            setMessages(prev => [...prev, { role: 'bot', content: data.answer || "응답이 없습니다." }]);
+            if (currentImage) {
+                // 1. Image Analysis Flow
+                const base64 = await fileToBase64(currentImage);
+
+                // Add temporary "Analyzing" message
+                setMessages(prev => [...prev, { role: 'bot', content: "🔍 이미지를 분석하고 있습니다... (약 10초 소요)" }]);
+
+                const analyzeRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/portfolio/analyze`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ image_base64: base64 }),
+                });
+
+                if (!analyzeRes.ok) throw new Error("Analysis failed");
+                const analysisData = await analyzeRes.json();
+
+                // 2. Save Portfolio
+                // For MVP, we save automatically using the analyzed data
+                const saveRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/portfolio`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ items: analysisData.items, name: "Analyzed Portfolio" }),
+                });
+
+                if (!saveRes.ok) throw new Error("Save failed");
+
+                const resultSummary = analysisData.items.map((item: any) => `- ${item.symbol}: ${item.quantity}주`).join('\n');
+
+                setMessages(prev => [
+                    ...prev.slice(0, -1), // Remove "Analyzing" message
+                    {
+                        role: 'bot',
+                        content: `✅ 분석이 완료되었습니다!\n\n**추출된 종목:**\n${resultSummary}\n\n대시보드에 업데이트되었습니다.`
+                    }
+                ]);
+
+                // Trigger dashboard refresh if needed (can use global state or context)
+                window.location.reload(); // Simple brute force refresh to update Home
+
+            } else {
+                // 3. Normal Text Query Flow
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/rag/query`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ query: userMsg }),
+                });
+                const data = await res.json();
+                setMessages(prev => [...prev, { role: 'bot', content: data.answer || "응답이 없습니다." }]);
+            }
         } catch (error) {
-            setMessages(prev => [...prev, { role: 'bot', content: "AI 연결 중 오류가 발생했습니다." }]);
+            setMessages(prev => [...prev, { role: 'bot', content: "🚨 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." }]);
             console.error(error);
         } finally {
             setLoading(false);

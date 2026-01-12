@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import RAGChat from "@/components/RAGChat";
+import PortfolioDashboard from "@/components/PortfolioDashboard";
 import { motion, Variants } from "framer-motion";
 
 export default function Home() {
@@ -57,6 +58,8 @@ export default function Home() {
       <motion.div variants={itemVariants} className="w-full">
         <RAGChat />
       </motion.div>
+
+      <PortfolioDashboard />
     </motion.main>
   );
 }

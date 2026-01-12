@@ -70,19 +70,19 @@
 ## 5. 구현 단계 (Implementation Steps)
 
 ### Phase 1: 파싱 및 저장 (Backend)
-1.  [ ] `RAGChat`에서 이미지 수신부 구현.
-2.  [ ] OpenAI Vision API 프롬프트 작성 (JSON 스키마 정의).
-3.  [ ] DB 모델링 (`Portfolios`, `PortfolioItems`) 및 마이그레이션.
-4.  [ ] 파싱 결과를 DB에 저장하는 로직 구현.
+1.  [x] `RAGChat`에서 이미지 수신부 구현.
+2.  [x] OpenAI Vision API 프롬프트 작성 (JSON 스키마 정의).
+3.  [x] DB 모델링 (`Portfolios`, `PortfolioItems`) 및 마이그레이션.
+4.  [x] 파싱 결과를 DB에 저장하는 로직 구현.
 
 ### Phase 2: 대시보드 시각화 (Frontend)
-1.  [ ] `Recharts` 라이브러리 설치.
-2.  [ ] 포트폴리오 도넛 차트 컴포넌트 개발.
-3.  [ ] 실시간 가격 표시 리스트 컴포넌트 개발.
+1.  [x] `Recharts` 라이브러리 설치.
+2.  [x] 포트폴리오 도넛 차트 컴포넌트 개발.
+3.  [x] 실시간 가격 표시 리스트 컴포넌트 개발.
 
 ### Phase 3: 가격 추적 로직
-1.  [ ] `yfinance` 연동하여 현재가 가져오는 유틸리티 함수 작성.
-2.  [ ] 포트폴리오 조회 API 작성 (`GET /portfolio`).
+1.  [x] `yfinance` 연동하여 현재가 가져오는 유틸리티 함수 작성.
+2.  [x] 포트폴리오 조회 API 작성 (`GET /portfolio`).
 
 ### Phase 4: 리포트 및 이메일
 1.  [ ] PDF 생성 템플릿 디자인 (HTML/CSS 이용 -> PDF 변환).

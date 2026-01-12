@@ -138,6 +138,55 @@ TypeError: Failed to fetch
     *   브라우저에서 `http://localhost:8000`으로 접속해 봅니다. `{ "message": ... }` 응답이 와야 정상입니다.
     *   접속이 안 된다면 서버가 실행되지 않았거나 포트가 닫혀 있는 것입니다.
 
-5.  **DB 및 pgvector 상태 확인**
-    *   RAG 기능은 `pgvector` 확장을 사용하므로 PostgreSQL DB가 정상 실행 중이어야 합니다.
-    *   `docker ps`로 DB 컨테이너가 켜져 있는지 확인하세요.
+
+---
+
+## 6. 시스템 포트 구성 및 네트워크 아키텍처 (System Architecture)
+
+현재 로컬 개발 환경(Docker Compose)에서의 포트 구성은 다음과 같습니다. 통신 에러 발생 시 **누가 누구에게 요청을 보내는지** 파악하는 것이 가장 중요합니다.
+
+### **Port Configuration**
+
+| 서비스 (Service) | 내부 포트 (Internal) | 외부 포트 (External) | 설명 (Description) |
+| :--- | :--- | :--- | :--- |
+| **Frontend** | 3000 | **3000** | Next.js 웹 서버. `http://localhost:3000`으로 접속합니다. |
+| **Backend** | 8000 | **8000** | FastAPI 백엔드 서버. `http://localhost:8000`으로 API 요청을 받습니다. |
+| **Database** | 5432 | **5432** | PostgreSQL 데이터베이스. DBeaver 등의 툴로 직접 접속 가능합니다. |
+
+### **통신 흐름 (Communication Flow)**
+
+1.  **User Browser(Chrome)** -> `http://localhost:3000` (Frontend 접속)
+2.  **User Browser(Chrome)** -> `http://localhost:8000` (API 요청, 예: 로그인, 포트폴리오 분석)
+    *   **중요:** 프론트엔드 코드(`PortfolioDashboard.tsx` 등)가 브라우저에서 실행되므로, 요청 주소는 `backend`가 아니라 **`localhost`**여야 합니다.
+3.  **Frontend Server(Next.js Node Process)** -> `http://backend:8000` (SSR 요청 시)
+    *   **중요:** 서버 사이드 렌더링(SSR) 중에는 도커 내부망을 타야 하므로 서비스 명인 `backend`를 사용합니다.
+4.  **Backend Server** -> `db:5432` (데이터베이스 연결)
+    *   백엔드는 도커 내부에서 DB를 찾으므로 서비스 명인 `db`를 호스트로 사용합니다.
+
+---
+
+## 7. 주요 에러 개념 설명 (Error Concepts)
+
+최근 발생한 에러들의 핵심 개념과 원인입니다.
+
+### **A. `TypeError: Failed to fetch`**
+*   **의미:** "서버 문조차 두드리지 못했다."
+*   **상황:** 브라우저가 `http://localhost:8000`으로 편지를 보내려고 우체통에 넣으려는데, 우체통이 아예 없거나 길이 끊어진 상황입니다.
+*   **원인:**
+    1.  **서버 다운:** 백엔드 컨테이너(`logmind-backend`)가 꺼져 있거나, 에러로 인해 계속 재시작 중(CrashLoopBackOff)인 경우.
+    2.  **주소 오류:** `.env.local` 등이 없어서 요청 주소가 `undefined/portfolio` 처럼 이상하게 변했을 때.
+*   **해결:** `docker ps`로 컨테이너 생존 확인, `docker logs backend`로 서버 에러 로그 확인.
+
+### **B. `Module not found: Can't resolve 'recharts'`**
+*   **의미:** "내 레시피엔 'recharts' 재료가 있는데, 냉장고(node_modules)에 없다."
+*   **상황:** `package.json`에는 라이브러리를 적어놨지만, 도커 컨테이너 안에는 아직 설치되지 않은 상태입니다.
+*   **원인:** 도커는 이미지를 빌드할 때 `npm install`을 수행합니다. 이후에 `package.json`을 수정해도, **이미지를 다시 빌드하지 않으면** 추가된 라이브러리는 컨테이너 안에 존재하지 않습니다.
+*   **해결:** 반드시 `--build` 옵션을 붙여서 컨테이너를 재생성해야 합니다.
+    *   명령어: `docker-compose up -d --build frontend`
+
+### **C. `500 Internal Server Error`**
+*   **의미:** "요청은 받았는데, 처리하다가 터졌다."
+*   **상황:** 서버가 요청을 받고 로직을 수행하다가 예상치 못한 에러(예: 0으로 나누기, DB 연결 실패, Null 참조)를 만난 경우입니다.
+*   **원인:** 주로 코드 버그, 환경 변수 누락(API Key 없음), 데이터 포맷 불일치 등이 원인입니다.
+*   **해결:** 브라우저는 에러 내용 모릅니다. 반드시 **백엔드 로그**(`docker-compose logs backend`)를 봐야 정확한 원인을 알 수 있습니다.
+

@@ -1,4 +1,3 @@
-
 fastapi
 uvicorn
 sqlalchemy
@@ -10,22 +9,10 @@ python-jose[cryptography]
 passlib[bcrypt]
 bcrypt==4.0.1
 python-multipart
-# AI/ML dependencies
 openai
 langchain
 langchain-openai
 langchain-community
 tiktoken
-chromadb
-rank_bm25
-sentence-transformers
-# Scheduling and Email
-apscheduler
-emails
-email-validator
-jinja2
-beautifulsoup4
-requests
-pytest
-pdfkit
 pgvector
+yfinance
