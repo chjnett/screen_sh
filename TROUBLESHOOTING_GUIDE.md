@@ -190,3 +190,23 @@ TypeError: Failed to fetch
 *   **원인:** 주로 코드 버그, 환경 변수 누락(API Key 없음), 데이터 포맷 불일치 등이 원인입니다.
 *   **해결:** 브라우저는 에러 내용 모릅니다. 반드시 **백엔드 로그**(`docker-compose logs backend`)를 봐야 정확한 원인을 알 수 있습니다.
 
+
+---
+
+## 8. 로컬 실행 시 ModuleNotFoundError: No module named 'app'
+
+**증상:**
+터미널에서 uvicorn app.main:app --reload 실행 시 다음과 같은 에러가 발생하며 서버가 켜지지 않음.
+` ModuleNotFoundError: No module named 'app' ` 
+
+**원인:**
+명령어를 실행하는 현재 위치(경로)가 잘못되었기 때문입니다. app 폴더는 backend 폴더 안에 있는데, 상위 폴더인 프로젝트 루트(screen_sh)에서 명령어를 실행하면 파이썬이 app 패키지를 찾지 못합니다.
+
+**해결 방법:**
+반드시 backend 폴더로 이동한 후 실행해야 합니다.
+
+cd backend
+uvicorn app.main:app --reload
+
+**주의사항 (Warning):**
+도커가 꺼져 있으면 DB 연결 에러가 발생합니다. 로컬 실행이라도 Docker Desktop을 켜주세요.
