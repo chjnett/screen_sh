@@ -28,3 +28,4 @@ beautifulsoup4
 requests
 pytest
 pdfkit
+pgvector

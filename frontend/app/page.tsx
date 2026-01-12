@@ -1,10 +1,10 @@
 "use client";
 
 import RAGChat from "@/components/RAGChat";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 
 export default function Home() {
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
@@ -17,7 +17,7 @@ export default function Home() {
     },
   }
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
   }
@@ -31,7 +31,7 @@ export default function Home() {
     >
       <motion.div variants={itemVariants} className="w-full max-w-2xl mb-8 space-y-2 text-center">
         <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">LogMind AI</h1>
-        <p className="text-gray-400 text-lg">전문적인 투자 인텔리전스</p>
+        <p className="text-gray-400 text-lg"> 투자 인텔리전스</p>
       </motion.div>
 
       <motion.div variants={itemVariants} className="w-full">

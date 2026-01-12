@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, Variants } from "framer-motion"
 import { Eye, EyeOff, Mail, Lock, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -68,7 +68,7 @@ export default function RegisterPage() {
         }
     }
 
-    const containerVariants = {
+    const containerVariants: Variants = {
         hidden: { opacity: 0, y: 20 },
         visible: {
             opacity: 1,
@@ -81,7 +81,7 @@ export default function RegisterPage() {
         },
     }
 
-    const itemVariants = {
+    const itemVariants: Variants = {
         hidden: { opacity: 0, y: 10 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
     }

@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, Variants } from "framer-motion"
 import { Eye, EyeOff, Mail, Lock, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -44,7 +44,7 @@ export default function LoginPage() {
         }
     }
 
-    const containerVariants = {
+    const containerVariants: Variants = {
         hidden: { opacity: 0, y: 20 },
         visible: {
             opacity: 1,
@@ -57,7 +57,7 @@ export default function LoginPage() {
         },
     }
 
-    const itemVariants = {
+    const itemVariants: Variants = {
         hidden: { opacity: 0, y: 10 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
     }
@@ -73,7 +73,7 @@ export default function LoginPage() {
                 {/* 로고 영역 */}
                 <motion.div variants={itemVariants} className="text-center mb-10">
                     <h1 className="text-2xl font-bold text-white">LogMind</h1>
-                    <p className="text-gray-400 text-sm mt-2">전문적인 투자 인사이트</p>
+                    <p className="text-gray-400 text-sm mt-2"> 투자 인사이트</p>
                 </motion.div>
 
                 {/* 탭 네비게이션 */}
