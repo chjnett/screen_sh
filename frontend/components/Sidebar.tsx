@@ -94,26 +94,7 @@ export default function Sidebar() {
             <div className={cn("pb-8 transition-all duration-300", isCollapsed ? "px-2" : "px-4")}>
 
                 {/* Drop Zone */}
-                <div className={cn(
-                    "bg-[#202225] border border-[#2a2b2e] border-dashed text-center group cursor-pointer hover:border-[#3182f6] transition-all overflow-hidden",
-                    isCollapsed ? "rounded-xl p-2" : "rounded-2xl p-4"
-                )}>
-                    <div className={cn("flex justify-center transition-all", isCollapsed ? "mb-0" : "mb-3")}>
-                        <div className={cn(
-                            "rounded-full bg-[#2a2b2e] flex items-center justify-center group-hover:bg-[#3172ea] transition-colors",
-                            isCollapsed ? "w-8 h-8" : "w-10 h-10"
-                        )}>
-                            <UploadCloud size={isCollapsed ? 16 : 20} className="text-[#B0B8C1] group-hover:text-white" />
-                        </div>
-                    </div>
 
-                    {!isCollapsed && (
-                        <div className="animate-in fade-in zoom-in duration-300">
-                            <p className="text-[#B0B8C1] text-xs mb-1 whitespace-nowrap">파일을 여기에 드래그하세요</p>
-                            <p className="text-[#6B7684] text-[10px] whitespace-nowrap">이미지, 문서 자동 인식</p>
-                        </div>
-                    )}
-                </div>
 
                 {/* Settings */}
                 <div className={cn(
