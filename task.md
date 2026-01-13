@@ -22,10 +22,14 @@ description: [현재 상태 & 할 일] 모든 작업의 기준점
 
 ## 🚀 향후 과제 (Upcoming Tasks)
 ### 1. 안정화 및 최적화
-- [ ] **백그라운드 작업**: 주가 업데이트 로직(`yfinance`)을 백그라운드 작업(`Celery` or `BackgroundTasks`)으로 전환 (현재 동기식).
+- [ ] **백그라운드 작업**: 리포트 생성 등 무거운 작업을 비동기(`BackgroundTasks`)로 처리.
 - [ ] **에러 처리**: API 예외 처리 강화 및 프론트엔드 에러 바운더리 적용.
 
-### 2. 기능 확장: 심층 분석 및 리포트
+### 2. 기능 확장: 실시간 시세 및 리포트
+- [ ] **실시간 주가 추적 (Real-time Tracking)**:
+  - [ ] **Backend**: `yfinance`를 활용하여 최신 주가를 조회하는 경량 API (`GET /portfolio/prices`) 구현.
+  - [ ] **Frontend**: `SWR` 또는 `React Query`를 이용한 **Polling(5~10초 주기)** 방식의 실시간 가격 업데이트 구현.
+  - [ ] **UI**: 주가 변동에 따른 깜빡임 효과 및 실시간 등락률 색상 적용.
 - [ ] **데이터 수집 (크롤링)**:
   - [ ] `yfinance`를 활용한 주요 재무제표(매출, 영업이익, PER/PBR 등) 데이터 수집 로직 구현.
   - [ ] `BeautifulSoup` 또는 `Google News API`를 활용한 보유 종목 관련 최신 뉴스 크롤링.

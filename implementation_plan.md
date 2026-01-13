@@ -93,6 +93,15 @@ c:\workspace2\screen_sh\
    - 포트폴리오 도넛 차트 포함 (선택 사항).
    - SMTP로 발송 (Gmail/AWS SES).
 
+### D. 실시간 주가 업데이트 흐름
+1. **Frontend**: 대시보드 진입 시 `GET /portfolio/prices` 폴링 시작 (예: 10초 간격).
+2. **Backend**:
+   - `yfinance`의 `FastInfo` 기능을 사용하여 지연 없이 최신가 조회.
+   - DB 업데이트 없이 메모리/캐시에서 빠르게 응답 (성능 최적화).
+3. **Frontend**:
+   - 응답받은 현재가를 기존 데이터와 비교.
+   - 가격 변동 시 UI 업데이트 (Flash Effect).
+
 ## 5. 디자인 가이드 (Toss 스타일)
 - **색상**: 다크 배경 (`#101113`), 카드 (`#1c1d20`), 강조 블루 (`#3182f6`).
 - **타이포그래피**: Pretendard 또는 Inter.
