@@ -264,41 +264,77 @@ import io
 async def download_portfolio_report(db: Session = Depends(get_db)):
     """
     Generates and downloads the investment report directly.
-    Processing happens synchronously, so it might take 10-20 seconds.
+    Implementation includes Fail-Safe logic to return a PDF even if data fetch fails.
     """
+    import traceback
+    
+    print(">>> [Report] Request received.", flush=True)
     portfolio = db.query(models.Portfolio).order_by(models.Portfolio.created_at.desc()).first()
+    
     if not portfolio or not portfolio.items:
         raise HTTPException(status_code=400, detail="No portfolio found.")
         
+    user = db.query(models.User).first()
+    user_email = user.email if user else "demo@logmind.ai"
+    
+    stock_details = []
+    overall_insight = "Analysis pending..."
+    
     try:
-        # Reuse logic from generate_and_send_report but synchronous
-        user = db.query(models.User).first()
-        user_email = user.email if user else "demo@logmind.ai"
-        
         # 1. Collect Data & News
-        stock_details = []
+        print(">>> [Report] Step 1: Collecting Data...", flush=True)
         for item in portfolio.items:
-            fin = DataCrawler.get_financial_summary(item.symbol)
-            news = DataCrawler.crawl_news(item.symbol, limit=3)
-            ai_summary = f"Sector: {fin.get('sector', 'N/A')}. Recent news mentions: {len(news)} articles."
-            
-            stock_details.append({
-                "symbol": item.symbol,
-                "name": item.name,
-                "quantity": float(item.quantity),
-                "avg_price": float(item.avg_price),
-                "price": float(item.current_price or item.avg_price),
-                "profit_rate": round(((float(item.current_price or item.avg_price) - float(item.avg_price)) / float(item.avg_price)) * 100, 2),
-                "per": fin.get("per", "N/A"),
-                "pbr": fin.get("pbr", "N/A"),
-                "ai_summary": ai_summary
-            })
-            
+            try:
+                fin = DataCrawler.get_financial_summary(item.symbol)
+                # Fail-safe news fetch
+                news = []
+                try:
+                    news = DataCrawler.crawl_news(item.symbol, limit=3)
+                except Exception as ne:
+                    print(f"News crawl error for {item.symbol}: {ne}")
+                
+                ai_summary = f"Sector: {fin.get('sector', 'N/A')}. News count: {len(news)}"
+                
+                # Prioritize real-time fetched price
+                live_price = float(fin.get("current_price") or item.current_price or item.avg_price)
+                
+                stock_details.append({
+                    "symbol": item.symbol,
+                    "name": item.name,
+                    "quantity": float(item.quantity),
+                    "avg_price": float(item.avg_price),
+                    "price": live_price,
+                    "profit_rate": round(((live_price - float(item.avg_price)) / float(item.avg_price)) * 100, 2) if float(item.avg_price) > 0 else 0.0,
+                    "current_price": live_price,
+                    "per": fin.get("per", "N/A"),
+                    "pbr": fin.get("pbr", "N/A"),
+                    "ai_summary": ai_summary
+                })
+            except Exception as item_e:
+                print(f"Error processing item {item.symbol}: {item_e}")
+                # Add minimal data so process doesn't stop
+                stock_details.append({
+                    "symbol": item.symbol,
+                    "name": item.name,
+                    "quantity": float(item.quantity),
+                    "avg_price": float(item.avg_price),
+                    "price": float(item.avg_price),
+                    "profit_rate": 0.0,
+                    "current_price": float(item.avg_price),
+                    "per": "-", "pbr": "-", "ai_summary": "Data fetch failed."
+                })
+
         # 2. Overall Portfolio Analysis
-        items_data = [{"symbol": s['symbol'], "quantity": s['quantity'], "avg_price": s['avg_price']} for s in stock_details]
-        overall_insight = rag.analyze_portfolio_long_term(items_data)
+        print(">>> [Report] Step 2: AI Analysis...", flush=True)
+        try:
+            items_data = [{"symbol": s['symbol'], "quantity": s['quantity'], "avg_price": s['avg_price']} for s in stock_details]
+            overall_insight = rag.analyze_portfolio_long_term(items_data)
+        except Exception as ai_e:
+            print(f"AI Analysis failed: {ai_e}")
+            overall_insight = "AI Analysis unavailable at this moment."
         
         # 3. Generate PDF
+        print(">>> [Report] Step 3: Generating PDF...", flush=True)
         generator = ReportGenerator()
         pdf_bytes = generator.create_pdf(
             user_email=user_email,
@@ -307,7 +343,7 @@ async def download_portfolio_report(db: Session = Depends(get_db)):
             stock_details=stock_details
         )
         
-        # Return as downloadable file
+        print(">>> [Report] Success! PDF generated.", flush=True)
         return StreamingResponse(
             io.BytesIO(pdf_bytes), 
             media_type="application/pdf",
@@ -315,6 +351,23 @@ async def download_portfolio_report(db: Session = Depends(get_db)):
         )
         
     except Exception as e:
-        import traceback
+        print(f">>> [Report] CRITICAL FAILURE: {e}", flush=True)
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
+        
+        # Emergency PDF Generation (Last Resort)
+        try:
+            buffer = io.BytesIO()
+            from reportlab.pdfgen import canvas
+            p = canvas.Canvas(buffer)
+            p.drawString(100, 800, "LogMind Report - Generation Failed")
+            p.drawString(100, 780, f"Error: {str(e)}")
+            p.showPage()
+            p.save()
+            buffer.seek(0)
+            return StreamingResponse(
+                buffer, 
+                media_type="application/pdf",
+                headers={"Content-Disposition": "attachment; filename=Error_Report.pdf"}
+            )
+        except:
+             raise HTTPException(status_code=500, detail=f"Report generation completely failed: {str(e)}")

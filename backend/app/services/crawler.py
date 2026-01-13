@@ -21,7 +21,14 @@ class DataCrawler:
             info = ticker.info
             
             # Extract key metrics safely
+            # Try to get real-time price efficiently
+            try:
+                current_price = ticker.fast_info.last_price
+            except:
+                current_price = info.get("currentPrice", info.get("regularMarketPrice", 0))
+
             metrics = {
+                "current_price": current_price,
                 "market_cap": info.get("marketCap", 0),
                 "per": info.get("trailingPE", 0),
                 "pbr": info.get("priceToBook", 0),
