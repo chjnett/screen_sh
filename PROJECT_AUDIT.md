@@ -64,6 +64,53 @@ graph TD
     subgraph Data Layer
         API -->|CRUD| DB[(PostgreSQL + pgvector)]
     end
+
+### 2.2 🧩 코드 레벨 상호작용 상세 (Code-Level Interaction Map)
+
+각 기능이 실행될 때 파일 간에 어떤 함수가 호출되는지 상세 흐름을 설명합니다.
+
+#### **A. 포트폴리오 대시보드 로딩 & AI 리포트 생성**
+1.  **Frontend Trigger** (`PortfolioDashboard.tsx`)
+    *   `fetchPortfolio()`: 페이지 로드 시 `GET /portfolio` 호출.
+    *   `onClick={() => fetch(.../download)}`: 리포트 다운로드 버튼 클릭 시 호출.
+
+2.  **API Router** (`backend/app/api/portfolio.py`)
+    *   `@router.post("/report/download")`: 프론트 요청 수신.
+    *   **Logic**:
+        1.  `db.query(models.Portfolio)`: DB에서 사용자 포트폴리오 조회.
+        2.  `DataCrawler.get_financial_summary()` 호출 -> `crawler.py`.
+        3.  `rag.analyze_portfolio_long_term()` 호출 -> `rag.py`.
+        4.  `ReportGenerator().create_pdf()` 호출 -> `report_generator.py`.
+        5.  `StreamingResponse(pdf_bytes)`: 최종 PDF 파일 반환.
+
+3.  **Service Layer (Controllers)**
+    *   `crawler.py`: `yfinance`로 숫자 데이터, `BeautifulSoup`으로 뉴스 텍스트 수집.
+    *   `rag.py`: 수집된 데이터를 텍스트 프롬프트로 변환하여 `OpenAI API`에 전송, 투자 조언 생성.
+    *   `report_generator.py`: `ReportLab`을 이용해 Canvas에 선, 도형, 글자를 그려 PDF 바이너리 생성 (비동기 아님, CPU 연산).
+
+#### **B. 실시간 시세 업데이트 (Polling)**
+1.  **Frontend** (`PortfolioDashboard.tsx`)
+    *   `useEffect` 내부 `setInterval(5000)`: 5초마다 백엔드 호출.
+    *   요청: `GET /portfolio/prices`.
+
+2.  **Backend** (`backend/app/api/portfolio.py`)
+    *   `get_realtime_prices()` 함수 실행.
+    *   **Logic**:
+        *   DB에서 포트폴리오 종목 리스트(`item.symbol`)만 가져옴.
+        *   `yfinance.Ticker(symbol).fast_info.last_price` 호출 (네트워크 요청).
+        *   DB 업데이트 없이 **메모리 상에서만** 현재가 딕셔너리 생성 후 반환.
+        *   *이유*: 5초마다 DB에 쓰기 작업을 하면 부하가 크기 때문.
+
+#### **C. 로그인 및 인증 흐름**
+1.  **Frontend** (`app/login/page.tsx`)
+    *   폼 제출 -> `POST /auth/token`.
+2.  **Backend** (`backend/app/api/auth.py`)
+    *   `login_for_access_token()` 실행.
+    *   `authenticate_user()` -> DB의 `users` 테이블 조회.
+    *   `verify_password()` -> 해시된 비밀번호 비교.
+    *   성공 시 `create_access_token()`으로 **JWT 토큰** 발급하여 반환.
+
+---
 ```
 
 ---
