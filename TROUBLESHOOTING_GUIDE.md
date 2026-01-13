@@ -2,28 +2,34 @@
 
 이 문서는 프로젝트 실행 중 발생하는 오류와 해결 방법을 정리한 로그입니다.
 
-## 1. 2026-01-13: Next.js Fetch Error (Port 8001)
+## 1. 2026-01-13: Next.js Fetch Error 및 Backend 실행 실패 (Port 8001)
 
 ### 증상 (Symptom)
-- **Error**: `TypeError: Failed to fetch`
-- **Location**: `components/PortfolioDashboard.tsx` (Line 35)
-- **Context**: 브라우저 콘솔에서 `http://localhost:8001/portfolio` 요청 실패 발생.
+- **Frontend Error**: `TypeError: Failed to fetch` (Line 35, `components/PortfolioDashboard.tsx`)
+- **Backend Error log**: `ModuleNotFoundError: No module named 'email_validator'`
+  - 추가 메시지: `ImportError: email-validator is not installed, run pip install 'pydantic[email]'`
 
-### 원인 분석 및 확인 (Analysis)
-1. **포트 설정 확인 (Port Verification)**:
-   - **결과**: **설정은 올바릅니다.**
-   - `docker-compose.yml` 파일에서 백엔드 서비스는 `ports: - "8001:8000"`으로 정의되어 있습니다.
-   - 이는 호스트의 `8001` 포트를 컨테이너의 `8000` 포트로 연결하므로, 외부(브라우저)에서 `http://localhost:8001`로 접근하는 것이 맞습니다.
+### 원인 분석 (Analysis)
+1. **Frontend**: 백엔드 서버가 정상적으로 실행되지 않아(죽어서) 연결할 수 없음.
+2. **Backend**: `pydantic` 라이브러리에서 이메일 관련 유효성 검사를 하려 했으나 `email-validator` 패키지가 설치되어 있지 않아 실행(Uvicorn)에 실패함.
+   - Pydantic v2 등에서 `EmailStr` 타입을 사용할 때 해당 의존성이 필수가 됨.
 
-2. **가능한 원인**:
-   - **백엔드 실행 실패**: 백엔드 컨테이너가 실행 중이어도, 내부 애플리케이션(`uvicorn`)이 에러로 인해 대기 상태가 아닐 수 있습니다.
-   - **네트워크 차단**: 방화벽이나 보안 소프트웨어가 8001 포트를 차단했을 수 있습니다.
-   - **브라우저 측 문제**: HTTPS가 아닌 HTTP 요청을 보안상 차단하거나, CORS 설정이 완벽하게 적용되지 않았을 수 있습니다.
+### 해결 방법 (Solution)
+1. **의존성 추가**: `backend/requirements.txt`에 `email-validator`를 추가해야 합니다.
+2. **이미지 재빌드**: 백엔드 도커 이미지를 새로 빌드하여 의존성을 설치해야 합니다.
 
-### 해결 가이드 (Solution Steps)
-1. **백엔드 로그 확인**: 터미널에서 `docker logs <container-id>` 명령어로 백엔드 에러를 확인하세요. (DB 연결 실패 등이 흔한 원인입니다)
-2. **직접 접속 테스트**: 브라우저 주소창에 `http://localhost:8001/` 또는 `http://localhost:8001/docs`를 입력하여 Swagger UI가 뜨는지 확인하세요.
-3. **CORS 설정**: `backend/app/main.py`의 `allow_origins`에 접속하는 프론트엔드 주소(`http://localhost:3000`)가 포함되어 있는지 확인하세요. (현재 코드는 포함되어 있음)
+### 적용할 명령어
+**1. requirements.txt 수정**
+`backend/requirements.txt` 파일에 다음 줄 추가:
+```
+email-validator
+```
+
+**2. 도커 재빌드 및 실행**
+```powershell
+docker-compose down
+docker-compose up -d --build
+```
 
 ---
  (Troubleshooting Guide)
