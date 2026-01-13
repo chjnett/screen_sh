@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Investment Report</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        body {
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+            background-color: #ffffff;
+            color: #333;
+            margin: 0;
+            padding: 40px;
+        }
+        .header {
+            border-bottom: 2px solid #3182f6;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header h1 {
+            font-size: 28px;
+            color: #1a1a1a;
+            margin: 0;
+        }
+        .header .meta {
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+        }
+        .portfolio-overview {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .overview-item {
+            text-align: center;
+        }
+        .overview-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .overview-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #3182f6;
+        }
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+        .section h2 {
+            font-size: 18px;
+            border-left: 4px solid #3182f6;
+            padding-left: 10px;
+            margin-bottom: 15px;
+            color: #1a1a1a;
+        }
+        .stock-card {
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #fff;
+        }
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        .stock-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .stock-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        .ai-insight {
+            background-color: #f0f7ff;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .chart-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .chart-img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            left: 40px;
+            right: 40px;
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>LogMind AI Report</h1>
+            <div style="font-size: 14px; color: #666; margin-top: 5px;">Premium Investment Analysis</div>
+        </div>
+        <div class="meta">
+            <div>Date: {{ date }}</div>
+            <div>User: {{ user_email }}</div>
+        </div>
+    </div>
+
+    <!-- Portfolio Summary -->
+    <div class="portfolio-overview">
+        <div class="overview-item">
+            <div class="overview-label">Total Assets</div>
+            <div class="overview-value">${{ total_value }}</div>
+        </div>
+        <div class="overview-item">
+            <div class="overview-label">Total Profit</div>
+            <div class="overview-value" style="color: {{ 'red' if total_profit_rate >= 0 else 'blue' }}">
+                {{ total_profit_rate }}%
+            </div>
+        </div>
+        <div class="overview-item">
+            <div class="overview-label">Risk Score</div>
+            <div class="overview-value" style="color: #orange;">{{ risk_score }}</div>
+        </div>
+    </div>
+
+    <!-- AI Overall Insight -->
+    <div class="section">
+        <h2>💡 AI Market Strategy</h2>
+        <div class="ai-insight">
+            {{ overall_insight | safe }}
+        </div>
+    </div>
+
+    <!-- Charts -->
+    {% if chart_image %}
+    <div class="section">
+        <h2>📊 Portfolio Allocation</h2>
+        <div class="chart-container">
+            <img src="data:image/png;base64,{{ chart_image }}" class="chart-img" />
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Individual Stock Analysis -->
+    <div class="section">
+        <h2>🔍 Deep Dive Analysis</h2>
+        
+        {% for stock in stocks %}
+        <div class="stock-card">
+            <div class="stock-header">
+                <div class="stock-name">{{ stock.symbol }} ({{ stock.name }})</div>
+                <div style="font-weight: bold; color: {{ 'red' if stock.profit_rate >= 0 else 'blue' }};">
+                    {{ stock.profit_rate }}%
+                </div>
+            </div>
+            
+            <div class="stock-metrics">
+                <div><strong>Current:</strong> ${{ stock.price }}</div>
+                <div><strong>Avg:</strong> ${{ stock.avg_price }}</div>
+                <div><strong>PER:</strong> {{ stock.per }}</div>
+                <div><strong>PBR:</strong> {{ stock.pbr }}</div>
+            </div>
+
+            <div class="ai-insight">
+                <strong>🤖 AI Analyst Note:</strong><br/>
+                {{ stock.ai_summary }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="footer">
+        This report is generated by LogMind AI. Investment involves risk. Past performance is not indicative of future results.<br/>
+        © 2026 LogMind AI. All rights reserved.
+    </div>
+</body>
+</html>

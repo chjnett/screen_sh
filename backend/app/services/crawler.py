@@ -76,15 +76,17 @@ class DataCrawler:
                 logger.error(f"News fetch failed status: {response.status_code}")
                 return []
 
-            soup = BeautifulSoup(response.content, features="xml")
+            # Use xml parser for RSS feeds (requires lxml installed)
+            # Use built-in html.parser as lxml is not available in slim image without system deps
+            soup = BeautifulSoup(response.content, features="html.parser")
             items = soup.find_all("item", limit=limit)
             
             news_list = []
             for item in items:
                 news_list.append({
-                    "title": item.title.text,
-                    "link": item.link.text,
-                    "pubDate": item.pubDate.text,
+                    "title": item.title.text if item.title else "No Title",
+                    "link": item.link.text if item.link else "#",
+                    "pubDate": item.pubDate.text if item.pubDate else "",
                     "source": item.source.text if item.source else "Google News"
                 })
                 
@@ -95,9 +97,24 @@ class DataCrawler:
 
 # Usage Example
 if __name__ == "__main__":
-    import pandas as pd # Needed for type checking in trend logic if executed directly
+    import json
+    
+    def print_pretty(title, data):
+        print(f"\n=== {title} ===")
+        print(json.dumps(data, indent=2, ensure_ascii=False))
+
+    # Test 1: US Stock (Apple)
+    print("\n[Testing US Stock: AAPL]")
     summary = DataCrawler.get_financial_summary("AAPL")
-    print("Financials:", summary)
+    print_pretty("Financials (AAPL)", summary)
     
     news = DataCrawler.crawl_news("AAPL", limit=3)
-    print("News:", news)
+    print_pretty("News (AAPL)", news)
+
+    # Test 2: KR Stock (Samsung Electronics)
+    print("\n[Testing KR Stock: 005930.KS]")
+    summary_kr = DataCrawler.get_financial_summary("005930.KS")
+    print_pretty("Financials (Samsung)", summary_kr)
+    
+    news_kr = DataCrawler.crawl_news("005930.KS", limit=3)
+    print_pretty("News (Samsung)", news_kr)

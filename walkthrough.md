@@ -25,6 +25,18 @@ description: [기록] 주요 의사결정 및 트러블슈팅 기록
 - **분석**: Docker 포트 매핑(`8001:8000`)은 정상이었으나, 위의 `email-validator` 에러로 인해 백엔드 서버가 죽어있는 상태였음이 확인됨.
 - **해결**: 백엔드 크래시 문제를 해결함으로써 Fetch 에러도 자연스럽게 해결됨.
 
+### [해결됨] 리포트 다운로드 500 Internal Server Error (Environment Hell) (2026-01-13)
+- **이슈**: `/portfolio/report/download` 호출 시 지속적인 500 에러 발생.
+- **원인 복합적**:
+  1. **Matplotlib GUI 충돌**: Docker 컨테이너(Linux CLI)에는 디스플레이가 없는데 `plt.plot()` 등이 GUI 창을 띄우려 시도함.
+  2. **WeasyPrint 시스템 의존성**: `WeasyPrint`는 `pango`, `cairo` 등 무거운 시스템 패키지가 필요하여 설치 및 빌드 실패 (Alpine/Slim 이미지 호환성 문제).
+  3. **BeautifulSoup 파서 문제**: `lxml` 라이브러리가 Docker 환경(`python:3.10-slim`)에 설치되지 않아 XML 파싱 실패.
+- **해결 과정 (Resolution Step)**:
+  1. **Matplotlib**: `report_generator.py` 최상단에 `matplotlib.use('Agg')`를 선언하여 Non-interactive 모드로 강제 설정.
+  2. **PDF 엔진 교체**: 시스템 의존성이 복잡한 `WeasyPrint`를 포기하고, 순수 파이썬 라이브러리인 **`ReportLab`**으로 교체하여 안정성 확보.
+  3. **Parser 변경**: `crawler.py`에서 `features="xml"` 대신 내장 파서인 `features="html.parser"`로 변경하여 `lxml` 의존성 제거.
+- **교훈**: Docker 환경에서는 OS 의존성이 없는 순수 파이썬(Pure Python) 라이브러리를 사용하는 것이 정신 건강에 이롭다.
+
 ## 📝 설계 및 아키텍처 의사결정 (Design & Architecture Decisions)
 
 ### 1. 프로젝트 구조 통합

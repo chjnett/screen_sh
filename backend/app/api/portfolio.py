@@ -174,3 +174,147 @@ def get_realtime_prices(db: Session = Depends(get_db)):
             }
             
     return prices
+
+from fastapi import BackgroundTasks
+from app.services.crawler import DataCrawler
+from app.services.report_generator import ReportGenerator
+from app.services.mailer import EmailService
+from app import rag
+
+async def generate_and_send_report(user_email: str, portfolio_items: list):
+    """
+    Background Task: Crawl -> Analyze -> Generate PDF -> Send Email
+    """
+    try:
+        print(f"Starting report generation for {user_email}...")
+        
+        # 1. Collect Data & News
+        stock_details = []
+        for item in portfolio_items:
+            # Fetch Financials
+            fin = DataCrawler.get_financial_summary(item.symbol)
+            # Fetch News
+            news = DataCrawler.crawl_news(item.symbol, limit=3)
+            
+            # Simple AI Analysis per stock (Optimization: can be batched)
+            # For now, just a placeholder or simple aggregation
+            ai_summary = f"Sector: {fin.get('sector', 'N/A')}. Recent news mentions: {len(news)} articles."
+            
+            stock_details.append({
+                "symbol": item.symbol,
+                "name": item.name,
+                "quantity": float(item.quantity),
+                "avg_price": float(item.avg_price),
+                "price": float(item.current_price or item.avg_price), # Use current or fallback
+                "profit_rate": round(((float(item.current_price or item.avg_price) - float(item.avg_price)) / float(item.avg_price)) * 100, 2),
+                "per": fin.get("per", "N/A"),
+                "pbr": fin.get("pbr", "N/A"),
+                "ai_summary": ai_summary
+            })
+            
+        # 2. Overall Portfolio Analysis (using existing RAG logic)
+        items_data = [{"symbol": s['symbol'], "quantity": s['quantity'], "avg_price": s['avg_price']} for s in stock_details]
+        overall_insight = rag.analyze_portfolio_long_term(items_data)
+        
+        # 3. Generate PDF
+        generator = ReportGenerator() # Templates are loaded from app/templates
+        pdf_bytes = generator.create_pdf(
+            user_email=user_email,
+            portfolio_data={}, # Can add more metadata
+            ai_insight=overall_insight,
+            stock_details=stock_details
+        )
+        
+        # 4. Send Email
+        await EmailService.send_report_email(user_email, pdf_bytes)
+        print("Report sent successfully.")
+        
+    except Exception as e:
+        print(f"Report generation failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+@router.post("/report", status_code=202)
+async def request_portfolio_report(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Triggers the generation and emailing of the investment report.
+    Returns immediately (202 Accepted) while processing in background.
+    """
+    # Get Portfolio & User
+    # MVP: Assume single user or demo user
+    user = db.query(models.User).first()
+    email = user.email if user else "demo@logmind.ai"
+    
+    portfolio = db.query(models.Portfolio).order_by(models.Portfolio.created_at.desc()).first()
+    if not portfolio or not portfolio.items:
+        raise HTTPException(status_code=400, detail="No portfolio found.")
+    
+    # Trigger Background Task
+    background_tasks.add_task(generate_and_send_report, email, portfolio.items)
+    
+    return {"message": "Report generation started. You will receive an email shortly."}
+
+from fastapi.responses import StreamingResponse
+import io
+
+@router.post("/report/download")
+async def download_portfolio_report(db: Session = Depends(get_db)):
+    """
+    Generates and downloads the investment report directly.
+    Processing happens synchronously, so it might take 10-20 seconds.
+    """
+    portfolio = db.query(models.Portfolio).order_by(models.Portfolio.created_at.desc()).first()
+    if not portfolio or not portfolio.items:
+        raise HTTPException(status_code=400, detail="No portfolio found.")
+        
+    try:
+        # Reuse logic from generate_and_send_report but synchronous
+        user = db.query(models.User).first()
+        user_email = user.email if user else "demo@logmind.ai"
+        
+        # 1. Collect Data & News
+        stock_details = []
+        for item in portfolio.items:
+            fin = DataCrawler.get_financial_summary(item.symbol)
+            news = DataCrawler.crawl_news(item.symbol, limit=3)
+            ai_summary = f"Sector: {fin.get('sector', 'N/A')}. Recent news mentions: {len(news)} articles."
+            
+            stock_details.append({
+                "symbol": item.symbol,
+                "name": item.name,
+                "quantity": float(item.quantity),
+                "avg_price": float(item.avg_price),
+                "price": float(item.current_price or item.avg_price),
+                "profit_rate": round(((float(item.current_price or item.avg_price) - float(item.avg_price)) / float(item.avg_price)) * 100, 2),
+                "per": fin.get("per", "N/A"),
+                "pbr": fin.get("pbr", "N/A"),
+                "ai_summary": ai_summary
+            })
+            
+        # 2. Overall Portfolio Analysis
+        items_data = [{"symbol": s['symbol'], "quantity": s['quantity'], "avg_price": s['avg_price']} for s in stock_details]
+        overall_insight = rag.analyze_portfolio_long_term(items_data)
+        
+        # 3. Generate PDF
+        generator = ReportGenerator()
+        pdf_bytes = generator.create_pdf(
+            user_email=user_email,
+            portfolio_data={},
+            ai_insight=overall_insight,
+            stock_details=stock_details
+        )
+        
+        # Return as downloadable file
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes), 
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=Investment_Report_{portfolio.id}.pdf"}
+        )
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")

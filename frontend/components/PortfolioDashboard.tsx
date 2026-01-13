@@ -141,8 +141,40 @@ export default function PortfolioDashboard() {
                         <div className="text-3xl font-bold text-white">
                             ${data.total_value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </div>
-                        <div className="text-sm text-green-500 font-medium bg-green-500/10 px-2 py-1 rounded inline-block mt-1">
-                            자산 분석 완료
+                        <div className="flex justify-end gap-2 mt-2">
+                            <div className="text-sm text-green-500 font-medium bg-green-500/10 px-2 py-1 rounded inline-block">
+                                자산 분석 완료
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    const btn = document.getElementById('btn-download');
+                                    if (btn) btn.innerText = "생성 중...";
+                                    const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/portfolio/report/download`;
+                                    console.log("Requesting Report Download from:", apiUrl);
+
+                                    try {
+                                        const res = await fetch(apiUrl, { method: 'POST' });
+                                        if (!res.ok) throw new Error("Download failed");
+                                        const blob = await res.blob();
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `Investment_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        a.remove();
+                                    } catch (e) {
+                                        alert("리포트 생성 실패: 잠시 후 다시 시도해주세요.");
+                                        console.error(e);
+                                    } finally {
+                                        if (btn) btn.innerText = "리포트 다운로드";
+                                    }
+                                }}
+                                id="btn-download"
+                                className="text-xs bg-[#3182f6] hover:bg-[#2c75e0] text-white px-3 py-1 rounded transition-colors flex items-center gap-1"
+                            >
+                                📄 리포트 다운로드
+                            </button>
                         </div>
                     </div>
                 </div>

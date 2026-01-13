@@ -1,0 +1,143 @@
+import io
+import base64
+import logging
+from typing import List, Dict
+from datetime import datetime
+import matplotlib
+matplotlib.use('Agg') # Essential for Docker environments without display
+import matplotlib.pyplot as plt
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+
+logger = logging.getLogger(__name__)
+
+class ReportGenerator:
+    """
+    Generates Investment PDF Reports using ReportLab (Dependency-free).
+    """
+    
+    def __init__(self, template_dir: str = "app/templates"):
+        # ReportLab doesn't use HTML templates directly in this simple mode
+        pass
+
+    def _generate_chart(self, items: List[Dict]) -> io.BytesIO:
+        """
+        Generates a Pie Chart for portfolio allocation and returns BytesIO.
+        """
+        try:
+            labels = [item['symbol'] for item in items]
+            sizes = [item['quantity'] * item['current_price'] for item in items]
+            
+            plt.figure(figsize=(6, 4))
+            plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140, colors=['#3182f6', '#f04452', '#33c759', '#ffb300'])
+            plt.axis('equal') 
+            
+            img_io = io.BytesIO()
+            plt.savefig(img_io, format='png', bbox_inches='tight')
+            img_io.seek(0)
+            plt.close()
+            return img_io
+        except Exception as e:
+            logger.error(f"Chart generation failed: {e}")
+            return None
+
+    def create_pdf(self, 
+                   user_email: str, 
+                   portfolio_data: Dict, 
+                   ai_insight: str, 
+                   stock_details: List[Dict]) -> bytes:
+        """
+        Generates PDF using ReportLab Platypus.
+        """
+        try:
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+            styles = getSampleStyleSheet()
+            
+            # Custom Style for Korean support (using default font for now as custom font requires .ttf file)
+            # IMPORTANT: ReportLab default fonts don't support Korean.
+            # In a real scenario, we load a TTF. For now, we stick to English to avoid crashes or tofu.
+            # "Batang" or "Gulim" are rarely available in linux containers.
+            # We will use standard font and keep content in English/Numeric for safety in this MVP step.
+            
+            story = []
+            
+            # Title
+            story.append(Paragraph("LogMind Investment Report", styles['Title']))
+            story.append(Spacer(1, 12))
+            story.append(Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d')} | User: {user_email}", styles['Normal']))
+            story.append(Spacer(1, 24))
+            
+            # 1. Portfolio Overview
+            total_value = sum([s['price'] * s['quantity'] for s in stock_details])
+            story.append(Paragraph("1. Portfolio Overview", styles['Heading2']))
+            story.append(Paragraph(f"<b>Total Assets:</b> ${total_value:,.2f}", styles['Normal']))
+            story.append(Spacer(1, 12))
+            
+            # Chart
+            chart_io = self._generate_chart(stock_details)
+            if chart_io:
+                img = Image(chart_io, width=400, height=260)
+                story.append(img)
+            story.append(Spacer(1, 24))
+            
+            # 2. Key Metrics Table
+            story.append(Paragraph("2. Asset Details", styles['Heading2']))
+            table_data = [['Symbol', 'Name', 'Qty', 'Avg Price', 'Current', 'Return']]
+            for s in stock_details:
+                row = [
+                    s['symbol'],
+                    s['name'][:15], # Truncate long names
+                    str(s['quantity']),
+                    f"${s['avg_price']:,.2f}",
+                    f"${s['price']:,.2f}",
+                    f"{s['profit_rate']}%"
+                ]
+                table_data.append(row)
+                
+            t = Table(table_data)
+            t.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            story.append(t)
+            story.append(Spacer(1, 24))
+            
+            # 3. AI Insight
+            story.append(Paragraph("3. AI Analyst Insight", styles['Heading2']))
+            # Simple text clearing
+            clean_insight = ai_insight.replace("\n", "<br/>")
+            story.append(Paragraph(clean_insight, styles['Normal']))
+            
+            doc.build(story)
+            return buffer.getvalue()
+            
+        except Exception as e:
+            logger.error(f"PDF generation failed: {e}")
+            raise e
+
+# Usage Example
+if __name__ == "__main__":
+    # Mock Data
+    generator = ReportGenerator(template_dir="backend/app/templates") # Path adjustment for local run
+    pdf = generator.create_pdf(
+        user_email="test@logmind.ai",
+        portfolio_data={},
+        ai_insight="Market is bullish due to recent AI advancements.",
+        stock_details=[
+            {"symbol": "AAPL", "name": "Apple Inc", "quantity": 10, "avg_price": 150, "price": 180, "profit_rate": 20, "per": 28.5, "pbr": 12.1, "ai_summary": "Strong buy."},
+            {"symbol": "TSLA", "name": "Tesla", "quantity": 5, "avg_price": 250, "price": 200, "profit_rate": -20, "per": 50.1, "pbr": 15.2, "ai_summary": "Wait and see."}
+        ]
+    )
+    
+    with open("test_report.pdf", "wb") as f:
+        f.write(pdf)
+    print("PDF generated successfully: test_report.pdf")
