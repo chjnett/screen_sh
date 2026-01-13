@@ -53,6 +53,28 @@ docker-compose restart backend
 docker restart d0e0243cfd55  # (컨테이너 ID 사용)
 ```
 
+## 3. 2026-01-13: Persistent 404 Error on /portfolio/ai-insight
+
+### 증상 (Symptom)
+- **Error**: `POST http://localhost:8001/portfolio/ai-insight 404 (Not Found)`
+- **Context**: 백엔드 재시작 후에도 여전히 404 오류 발생.
+
+### 원인 및 확인 절차 (Analysis & Verification)
+1. **코드 저장 여부**: `backend/app/api/portfolio.py` 파일이 실제로 저장되었는지 확인.
+2. **라우터 등록 확인**: `backend/app/main.py`에 `portfolio` 라우터가 올바르게 등록되어 있는지 확인.
+   - 코드: `app.include_router(portfolio.router, prefix="/portfolio", tags=["portfolio"])`
+   - 이 설정이 없으면 `/portfolio` 하위 경로는 404가 뜹니다.
+3. **Swagger UI 확인**: `http://localhost:8001/docs` 에 접속하여 `/portfolio/ai-insight` 엔드포인트가 목록에 보이는지 확인.
+   - 보이지 않는다면, 파이썬 파일의 `router` 객체에 `@router.post` 데코레이터가 제대로 적용되지 않았거나, 파일이 로드되지 않은 것.
+
+### 해결 방법 (Solution)
+1. **파일 내용 검증**: `backend/app/api/portfolio.py` 파일을 열어 `@router.post("/ai-insight")` 부분이 존재하는지 눈으로 확인하세요.
+2. **컨테이너 로그 확인**: 백엔드가 시작될 때 에러가 발생하면 일부분만 로드될 수 있습니다.
+   ```powershell
+   docker logs screen_sh-backend
+   ```
+   로그에 `SyntaxError`나 `ImportError`가 있다면 그 부분을 수정해야 API가 등록됩니다. (특히 방금 수정한 `rag.py` 괄호 에러가 원인일 수 있음)
+
 ---
  (Troubleshooting Guide)
 

@@ -43,7 +43,6 @@ def generate_answer(query: str, context_docs: List[MarketKnowledge]) -> str:
             {"role": "user", "content": f"Context:\n{context_text}\n\nQuestion: {query}"}
         ]
     )
-    )
     return response.choices[0].message.content
 
 def analyze_portfolio_long_term(items: List[dict]) -> str:
