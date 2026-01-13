@@ -72,7 +72,7 @@ export default function RAGChat() {
                 // Add temporary "Analyzing" message
                 setMessages(prev => [...prev, { role: 'bot', content: "🔍 이미지를 분석하고 있습니다... (약 10초 소요)" }]);
 
-                const analyzeRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/portfolio/analyze`, {
+                const analyzeRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/portfolio/analyze`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ image_base64: base64 }),
@@ -83,7 +83,7 @@ export default function RAGChat() {
 
                 // 2. Save Portfolio
                 // For MVP, we save automatically using the analyzed data
-                const saveRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/portfolio`, {
+                const saveRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/portfolio`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ items: analysisData.items, name: "Analyzed Portfolio" }),
@@ -106,7 +106,7 @@ export default function RAGChat() {
 
             } else {
                 // 3. Normal Text Query Flow
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/rag/query`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/rag/query`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ query: userMsg }),

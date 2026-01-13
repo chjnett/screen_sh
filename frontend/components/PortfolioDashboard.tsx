@@ -32,7 +32,7 @@ export default function PortfolioDashboard() {
 
     const fetchPortfolio = async () => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/portfolio`);
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/portfolio`);
             if (res.ok) {
                 const json = await res.json();
                 if (json.items && json.items.length > 0) {
