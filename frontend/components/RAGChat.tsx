@@ -115,7 +115,7 @@ export default function RAGChat() {
                 setMessages(prev => [...prev, { role: 'bot', content: data.answer || "응답이 없습니다." }]);
             }
         } catch (error) {
-            setMessages(prev => [...prev, { role: 'bot', content: "🚨 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." }]);
+            setMessages(prev => [...prev, { role: 'bot', content: " 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요." }]);
             console.error(error);
         } finally {
             setLoading(false);
