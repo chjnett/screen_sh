@@ -19,6 +19,29 @@ def analyze_portfolio(request: schemas.PortfolioAnalysisRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/ai-insight", response_model=dict)
+def get_portfolio_insight(db: Session = Depends(get_db)):
+    """
+    Analyzes the current user's portfolio for long-term investment perspective.
+    """
+    portfolio = db.query(models.Portfolio).order_by(models.Portfolio.created_at.desc()).first()
+    if not portfolio or not portfolio.items:
+        return {"insight": "포트폴리오 데이터가 부족하여 분석할 수 없습니다."}
+    
+    # Prepare data for analysis
+    items_data = [
+        {
+            "symbol": item.symbol, 
+            "quantity": item.quantity, 
+            "avg_price": item.avg_price
+        } for item in portfolio.items
+    ]
+    
+    from app import rag
+    insight = rag.analyze_portfolio_long_term(items_data)
+    
+    return {"insight": insight}
+
 from app.models import User
 from app.core import security
 

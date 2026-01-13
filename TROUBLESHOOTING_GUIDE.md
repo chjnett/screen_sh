@@ -31,6 +31,28 @@ docker-compose down
 docker-compose up -d --build
 ```
 
+## 2. 2026-01-13: Backend API 404 Error (/portfolio/ai-insight)
+
+### 증상 (Symptom)
+- **Frontend Error**: `POST http://localhost:8001/portfolio/ai-insight 404 (Not Found)`
+- **Context**: 프론트엔드에서 AI 분석 요청 시 백엔드가 해당 주소를 찾지 못함.
+
+### 원인 분석 (Analysis)
+1. **코드 미반영**: `backend/app/api/portfolio.py` 파일에 새로운 엔드포인트(`@router.post("/ai-insight")`)를 추가했지만, 도커 컨테이너 내부의 `uvicorn` 서버가 이를 즉시 감지하여 재시작하지 못했거나, 이전 버전의 코드로 실행 중임.
+2. **Uvicorn Reload 지연**: 개발 모드(`--reload`)여도 새 파일 추가나 대규모 변경은 가끔 재시작을 필요로 함.
+
+### 해결 방법 (Solution)
+1. **백엔드 리스타트**: 가장 확실한 방법은 백엔드 컨테이너를 재시작하여 변경된 파이썬 코드를 강제로 로드하게 하는 것입니다.
+
+### 적용할 명령어
+```powershell
+docker-compose restart backend
+```
+또는
+```powershell
+docker restart d0e0243cfd55  # (컨테이너 ID 사용)
+```
+
 ---
  (Troubleshooting Guide)
 
