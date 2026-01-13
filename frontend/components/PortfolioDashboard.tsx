@@ -69,6 +69,50 @@ export default function PortfolioDashboard() {
         }
     };
 
+    // Real-time Price Polling
+    useEffect(() => {
+        if (!data) return;
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/portfolio/prices`);
+                if (res.ok) {
+                    const prices = await res.json();
+
+                    setData(prevData => {
+                        if (!prevData) return null;
+
+                        const updatedItems = prevData.items.map(item => {
+                            const newPriceData = prices[item.symbol];
+                            if (newPriceData) {
+                                return {
+                                    ...item,
+                                    current_price: newPriceData.current_price
+                                };
+                            }
+                            return item;
+                        });
+
+                        // Recalculate total value
+                        const newTotalValue = updatedItems.reduce((acc, item) => {
+                            return acc + (item.quantity * (item.current_price || item.avg_price || 0));
+                        }, 0);
+
+                        return {
+                            ...prevData,
+                            items: updatedItems,
+                            total_value: newTotalValue
+                        };
+                    });
+                }
+            } catch (error) {
+                console.error("Price update failed", error);
+            }
+        }, 5000); // 5 seconds update
+
+        return () => clearInterval(interval);
+    }, [data !== null]); // Run only when data exists
+
     if (loading) return null; // Or skeleton
     if (!data) return null; // No portfolio yet
 

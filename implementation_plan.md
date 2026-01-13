@@ -10,7 +10,8 @@ description: [설계도] 전체 시스템의 구조와 구현 계획
 - **Database**: PostgreSQL (pgvector 확장 사용)
 - **AI/LLM**: OpenAI GPT-4o (Vision & Chat)
 - **데이터 파이프라인**:
-  - **크롤러**: `yfinance` (재무제표), `BeautifulSoup` (뉴스)
+  - **크롤러**: `yfinance` (재무지표), `BeautifulSoup` (뉴스)
+  - **리포트 엔진**: `Jinja2` (HTML 템플릿), `WeasyPrint` (PDF 생성), `Matplotlib` (차트 이미지)
   - **이메일 서비스**: `FastAPI-Mail` (SMTP)
 - **인프라**: Docker Compose (Self-managed)
 
@@ -24,6 +25,10 @@ c:\workspace2\screen_sh\
 │   │   ├── schemas.py      # Pydantic 스키마
 │   │   ├── rag.py          # RAG 로직 (임베딩 & 검색)
 │   │   └── services/       # 비즈니스 로직
+│   │       ├── report_generator.py # PDF Creation Logic
+│   │       └── mailer.py           # Email Logic
+│   │   ├── templates/              # Jinja2 HTML Templates
+│   │       └── report_template.html
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/               # Next.js 애플리케이션

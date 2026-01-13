@@ -143,3 +143,34 @@ def get_portfolio(db: Session = Depends(get_db)):
         "total_value": total_value,
         "risk_assessment": "Portfolio loaded successfully."
     }
+
+@router.get("/prices", response_model=dict)
+def get_realtime_prices(db: Session = Depends(get_db)):
+    """
+    Fetches real-time prices for the current portfolio items without updating the DB.
+    Optimized for polling.
+    """
+    portfolio = db.query(models.Portfolio).order_by(models.Portfolio.created_at.desc()).first()
+    if not portfolio or not portfolio.items:
+        return {}
+    
+    prices = {}
+    for item in portfolio.items:
+        try:
+            ticker = yf.Ticker(item.symbol)
+            # fast_info provides the latest available price efficiently
+            price = ticker.fast_info.last_price
+            prev_close = ticker.fast_info.previous_close
+            change_percent = ((price - prev_close) / prev_close * 100) if prev_close else 0.0
+            
+            prices[item.symbol] = {
+                "current_price": price,
+                "change_percent": change_percent
+            }
+        except Exception:
+            prices[item.symbol] = {
+                "current_price": item.current_price, # Fallback to DB price
+                "change_percent": 0.0
+            }
+            
+    return prices
